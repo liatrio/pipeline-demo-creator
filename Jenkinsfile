@@ -9,9 +9,19 @@ pipeline {
         script {
           PROJECT_KEY = params.pipeline_name.substring(0,4).toUpperCase()
         }
+        deleteDir()
         withCredentials([usernamePassword(credentialsId: 'BitbucketCreds', passwordVariable: 'passwordVariable', usernameVariable: 'usernameVariable')]){
           sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects -H \"Content-Type: application/json\" -d \'{\"key\": \"\'${PROJECT_KEY}\'\", \"name\": \"\'${params.pipeline_name}\'\", \"description\": \"\'${params.pipeline_name}\'- Built by automation\"}\'"
           sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos -H \"Content-Type: application/json\" -d \'{\"name\": \"\'${params.pipeline_name}\'\", \"scmId\": \"git\", \"forkable\": true}\'"
+          sh """git clone --depth 1 -b master https://github.com/liatrio/pipeline-demo-app.git pipeline-demo-app
+              cd pipeline-demo-app
+              rm -rf .git
+              git init
+              git add .
+              git commit -m \"Initial Commit\"
+              git remote add origin http://${env.usernameVariable}:${env.passwordVariable}@bitbucket.liatr.io/scm/${PROJECT_KEY}/${params.pipeline_name}.git
+              git push -u origin master
+              """
         }
       }
     }
