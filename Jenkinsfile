@@ -32,5 +32,12 @@ pipeline {
         }
       }
     }
+    stage('Create Slack Channel') {
+      steps {
+        withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]){
+          sh "curl -X POST -H \'Authorization: Bearer ${env.token}\' -H \"Content-Type: application/json\" -d \'{\"name\": \"\'${params.pipeline_name}\'\", \"token\": \"\'${env.token}\'\"}\' https://liatrio-demo.slack.com/api/channels.create"
+        }
+      }
+    }
   }
 }
