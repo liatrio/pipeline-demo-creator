@@ -2,8 +2,6 @@ pipeline {
   agent any
   parameters {
     string(name: "pipeline_name", description: "What would you like to name the demo application?")
-    string(name: 'conf_space_key', defaultValue: 'EX', description: 'Key for confluence space.')
-    string(name: 'conf_space_name', defaultValue: 'example_name', description: 'Name of confluence space to create.')
   }
   stages {
     stage('Create Bitbucket Project and Git Repo') {
@@ -40,7 +38,7 @@ pipeline {
         script {
           withCredentials([usernamePassword(credentialsId: 'BitbucketCreds', passwordVariable: 'passwordVariable', usernameVariable: 'usernameVariable')]){
             sh """
-            curl -u ${env.usernameVariable}:${env.passwordVariable} -d '{ "key": "${params.CONF_SPACE_KEY}", "name": "${params.CONF_SPACE_NAME}", "metadata": {} }' -H 'Content-Type: application/json' -X POST http://confluence.liatr.io/rest/api/space/
+            curl -u ${env.usernameVariable}:${env.passwordVariable} -d '{ "key": "${PROJECT_KEY}", "name": "${params.pipeline_name}", "metadata": {} }' -H 'Content-Type: application/json' -X POST http://confluence.liatr.io/rest/api/space/
             """
           }
         }
