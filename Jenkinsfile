@@ -39,5 +39,17 @@ pipeline {
         }
       }
     }
+    stage('Create Confluence space') {
+      agent any
+      steps {
+        script {
+          withCredentials([usernamePassword(credentialsId: 'BitbucketCreds', passwordVariable: 'passwordVariable', usernameVariable: 'usernameVariable')]){
+            sh """
+            curl -u ${env.usernameVariable}:${env.passwordVariable} -d '{ "key": "${PROJECT_KEY}", "name": "${params.pipeline_name}", "metadata": {} }' -H 'Content-Type: application/json' -X POST http://confluence.liatr.io/rest/api/space/
+            """
+          }
+        }
+      }
+    }
   }
 }
