@@ -4,7 +4,7 @@ pipeline {
     string(name: "pipeline_name", description: "What would you like to name the demo application?")
   }
   stages {
-    stage('Create Bitbucket Project and Git Repo') {
+    stage('Create Bitbucket Project and Git Repos') {
       steps {
         script {
           PROJECT_KEY = params.pipeline_name.substring(0,4).toUpperCase()
@@ -12,14 +12,24 @@ pipeline {
         deleteDir()
         withCredentials([usernamePassword(credentialsId: 'BitbucketCreds', passwordVariable: 'passwordVariable', usernameVariable: 'usernameVariable')]){
           sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects -H \"Content-Type: application/json\" -d \'{\"key\": \"\'${PROJECT_KEY}\'\", \"name\": \"\'${params.pipeline_name}\'\", \"description\": \"\'${params.pipeline_name}\'- Built by automation\"}\'"
-          sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos -H \"Content-Type: application/json\" -d \'{\"name\": \"\'${params.pipeline_name}\'\", \"scmId\": \"git\", \"forkable\": true}\'"
+          sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos -H \"Content-Type: application/json\" -d \'{\"name\": \"pipeline-demo-application\", \"scmId\": \"git\", \"forkable\": true}\'"
           sh """git clone --depth 1 -b master https://github.com/liatrio/pipeline-demo-app.git pipeline-demo-app
               cd pipeline-demo-app
               rm -rf .git
               git init
               git add .
               git commit -m \"Initial Commit\"
-              git remote add origin http://${env.usernameVariable}:${env.passwordVariable}@bitbucket.liatr.io/scm/${PROJECT_KEY}/${params.pipeline_name}.git
+              git remote add origin http://${env.usernameVariable}:${env.passwordVariable}@bitbucket.liatr.io/scm/${PROJECT_KEY}/pipeline-demo-application.git
+              git push -u origin master
+              """
+          sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos -H \"Content-Type: application/json\" -d \'{\"name\": \"pipeline-dashboard\", \"scmId\": \"git\", \"forkable\": true}\'"
+          sh """git clone --depth 1 -b master https://github.com/liatrio/pipeline-home pipeline-home
+              cd pipeline-home
+              rm -rf .git
+              git init
+              git add .
+              git commit -m \"Initial Commit\"
+              git remote add origin http://${env.usernameVariable}:${env.passwordVariable}@bitbucket.liatr.io/scm/${PROJECT_KEY}/pipeline-dashboard.git
               git push -u origin master
               """
         }
