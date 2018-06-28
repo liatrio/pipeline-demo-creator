@@ -18,10 +18,6 @@ pipeline {
               cd pipeline-demo-app
               rm -rf .git
               git init
-              sed -i -e 's/__APP_NAME__/${PROJECT_NAME_SANITIZED}/g' Jenkinsfile
-              sed -i -e 's/__PROJECT_NAME__/${PROJECT_NAME_SANITIZED}/g' src/template/site.js
-              sed -i -e 's/__PROJECT_KEY__/${PROJECT_KEY}/g' src/template/site.js
-              sed -i -e 's/__APP_NAME__/${PROJECT_NAME_SANITIZED}/g' src/template/site.js
               git add .
               git commit -m \"Initial Commit\"
               git remote add origin http://${env.usernameVariable}:${env.passwordVariable}@bitbucket.liatr.io/scm/${PROJECT_KEY}/pipeline-demo-application.git
@@ -32,6 +28,10 @@ pipeline {
               cd pipeline-home
               rm -rf .git
               git init
+              sed -i -e 's/__APP_NAME__/${PROJECT_NAME_SANITIZED}/g' Jenkinsfile
+              sed -i -e 's/__PROJECT_NAME__/${PROJECT_NAME_SANITIZED}/g' src/template/site.js
+              sed -i -e 's/__PROJECT_KEY__/${PROJECT_KEY}/g' src/template/site.js
+              sed -i -e 's/__APP_NAME__/${PROJECT_NAME_SANITIZED}/g' src/template/site.js
               git add .
               git commit -m \"Initial Commit\"
               git remote add origin http://${env.usernameVariable}:${env.passwordVariable}@bitbucket.liatr.io/scm/${PROJECT_KEY}/pipeline-home.git
