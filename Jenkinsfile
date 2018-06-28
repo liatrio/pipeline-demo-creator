@@ -8,11 +8,11 @@ pipeline {
       steps {
         script {
           PROJECT_KEY = params.pipeline_name.substring(0,4).toUpperCase()
-          PROJECT_NAME_SANITIZED = params.pipeline_name.replaceAll("[^A-Za-z0-9 \\-]", "").replace(' ', '-').toLowerCase()
+          PROJECT_NAME_SANITIZED = params.pipeline_name.replaceAll("[^A-Za-z0-9\\- ]", "").replace(' ', '-').toLowerCase()
         }
         deleteDir()
         withCredentials([usernamePassword(credentialsId: 'BitbucketCreds', passwordVariable: 'passwordVariable', usernameVariable: 'usernameVariable')]){
-          sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects -H \"Content-Type: application/json\" -d \'{\"key\": \"\'${PROJECT_KEY}\'\", \"name\": \"\'${params.pipeline_name}\'\", \"description\": \"\'${params.pipeline_name}\'- Built by automation\"}\'"
+          sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects -H \"Content-Type: application/json\" -d \'{\"key\": \"\'${PROJECT_KEY}\'\", \"name\": \"\'${PROJECT_NAME_SANITIZED}\'\", \"description\": \"\'${PROJECT_NAME_SANITIZED}\'- Built by automation\"}\'"
           sh "curl -X POST -v -u ${env.usernameVariable}:${env.passwordVariable} http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos -H \"Content-Type: application/json\" -d \'{\"name\": \"pipeline-demo-application\", \"scmId\": \"git\", \"forkable\": true}\'"
           sh """git clone --depth 1 -b master https://github.com/liatrio/pipeline-demo-app.git pipeline-demo-app
               cd pipeline-demo-app
