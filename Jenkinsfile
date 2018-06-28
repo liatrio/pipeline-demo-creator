@@ -19,7 +19,7 @@ pipeline {
               rm -rf .git
               git init
               sed -i -e 's/__APP_NAME__/${PROJECT_NAME_SANITIZED}/g' Jenkinsfile
-              sed -i -e 's/__PROJECT_NAME__/${params.pipeline_name}/g' src/template/site.js
+              sed -i -e 's/__PROJECT_NAME__/${PROJECT_NAME_SANITIZED}/g' src/template/site.js
               sed -i -e 's/__PROJECT_KEY__/${PROJECT_KEY}/g' src/template/site.js
               sed -i -e 's/__APP_NAME__/${PROJECT_NAME_SANITIZED}/g' src/template/site.js
               git add .
