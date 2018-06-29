@@ -1,4 +1,6 @@
+#!/usr/bin/env groovy
 import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
 pipeline {
   agent any
   parameters {
@@ -12,28 +14,33 @@ pipeline {
           PROJECT_KEY = PROJECT_NAME.substring(0,4).toUpperCase()
         }
         script {
-          def bitbucketProjectPayload = """
-            {"key": "${PROJECT_KEY}", "name": "${PROJECT_NAME}", "description": "${PROJECT_NAME} - Built by automation"}
-          """
-          def bitbucketProjectResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: bitbucketProjectPayload, url: "http://bitbucket.liatr.io/rest/api/1.0/projects/"
+          def bitbucketProjectPayload = [
+            key: PROJECT_KEY,
+            name: PROJECT_NAME,
+            description: PROJECT_NAME + "-Built by automation"
+          ]
+          def bitbucketProjectResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(bitbucketProjectPayload), url: "http://bitbucket.liatr.io/rest/api/1.0/projects/"
           def parsedResponse = new JsonSlurper().parseText(bitbucketProjectResponse.content)
           //TODO: slack send the link with success
-          def projectLink = parsedResponse.links.self[0].href
-          println projectLink
+          println parsedResponse.links.self[0].href
         }
         script {
-          def demoAppRepoPayload = """
-            {"name": "pipeline-demo-application", "scmId": "git", "forkable": true}
-          """
-          def appCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: demoAppRepoPayload, url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos"
+          def demoAppRepoPayload = [
+            name: "pipeline-demo-application",
+            scmId: "git",
+            forkable: true
+          ]
+          def appCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(demoAppRepoPayload), url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos"
           //def parsedResponse = new JsonSlurper().parseText(appCreationResponse.content)
           //TODO: slack send the link with success
         }
         script {
-          def dashboardRepoPayload = """
-            {"name": "pipeline-home", "scmId": "git", "forkable": true}
-          """
-          def dashboardCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: dashboardRepoPayload, url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos"
+          def dashboardRepoPayload = [
+            name: "pipeline-home",
+            scmId: "git",
+            forkable: true
+          ]
+          def dashboardCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(dashboardRepoPayload), url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos"
           //def parsedResponse = new JsonSlurper().parseText(dashboardCreationResponse.content)
           //TODO: slack send the link with success
         }
@@ -71,11 +78,14 @@ pipeline {
     stage('Create Jira Project') {
       steps {
         script {
-          def jiraProjectPayload = """
-            {"key": "${PROJECT_KEY}", "name": "${PROJECT_NAME}", "projectTypeKey": "software", "lead": "liatrio", "description": "${PROJECT_NAME} - Built by automation"}
-          """
-          def jiraProjectCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: jiraProjectPayload, url: "http://jira.liatr.io/rest/api/2/project"
-          //def parsedResponse = new JsonSlurper().parseText(jiraProjectCreationResponse.content)
+          def jiraProjectPayload = [
+            key: PROJECT_KEY,
+            name: PROJECT_NAME,
+            projectTypeKey: "software",
+            lead: "liatrio",
+            description: PROJECT_NAME + " - Built by automation"
+          ]
+          def jiraProjectCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(jiraProjectPayload), url: "http://jira.liatr.io/rest/api/2/project"
           //TODO: slack send the link with success
         }
       }
@@ -84,11 +94,8 @@ pipeline {
       steps {
         script {
           withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]) {
-          def slackPayload = """
-          {"name": "${PIPELINE_NAME}"}
-          """
-          def slackChannelCreationResponse = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: slackPayload, url: "https://liatrio-demo.slack.com/api/channels.create"
-          //def parsedResponse = new JsonSlurper().parseText(slackChannelCreationResponse.content)
+          def slackPayload = [name: PIPELINE_NAME]
+          def slackChannelCreationResponse = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(slackPayload), url: "https://liatrio-demo.slack.com/api/channels.create"
           //TODO: slack send the link with success
           }
         }
@@ -98,11 +105,11 @@ pipeline {
       agent any
       steps {
         script {
-          def confluenceSpacePayload = """
-            { "key": "${PROJECT_KEY}", "name": "${PIPELINE_NAME}", "metadata": {} }
-          """
-          def confluenceSpaceCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: confluenceSpacePayload, url: "http://confluence.liatr.io/rest/api/space/"
-          //def parsedResponse = new JsonSlurper().parseText(confluenceSpaceCreationResponse.content)
+          def confluenceSpacePayload = [
+            key: PROJECT_KEY,
+            name: PIPELINE_NAME
+          ]
+          def confluenceSpaceCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(confluenceSpacePayload), url: "http://confluence.liatr.io/rest/api/space/"
           //TODO: slack send the link with success
         }
       }
