@@ -7,8 +7,8 @@ pipeline {
     stage('Delete Bitbucket Repos and Project') {
       steps {
         script {
-          PROJECT_KEY = params.pipeline_name.substring(0,4).toUpperCase()
-          PROJECT_NAME_SANITIZED = params.pipeline_name.replaceAll("[^A-Za-z0-9 \\-]", "").replace(' ', '-').toLowerCase()
+          PROJECT_NAME = params.pipeline_name.replaceAll("[^A-Za-z0-9\\- ]", "").replace(' ', '-').toLowerCase()
+          PROJECT_KEY = PROJECT_NAME.substring(0,4).toUpperCase()
         }
         deleteDir()
         withCredentials([usernamePassword(credentialsId: 'BitbucketCreds', passwordVariable: 'passwordVariable', usernameVariable: 'usernameVariable')]){
@@ -27,9 +27,10 @@ pipeline {
     }
     /*
     stage('Delete Slack Channel') {
+      //TODO - get the slack channel ID and then delete it
       steps {
         withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]){
-          sh "curl -X POST -H \'Authorization: Bearer ${env.token}\' -H \"Content-Type: application/json\" -d \'{\"name\": \"\'${PROJECT_NAME_SANITIZED}\'\", \"token\": \"\'${env.token}\'\"}\' https://liatrio-demo.slack.com/api/channels.delete"
+          sh "curl -X POST -H \'Authorization: Bearer ${env.token}\' -H \"Content-Type: application/json\" -d \'{\"name\": \"\'${PROJECT_NAME}\'\", \"token\": \"\'${env.token}\'\"}\' https://liatrio-demo.slack.com/api/channels.delete"
         }
       }
     }
