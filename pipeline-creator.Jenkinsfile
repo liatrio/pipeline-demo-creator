@@ -54,6 +54,8 @@ pipeline {
               cd pipeline-demo-app
               rm -rf .git
               git init
+              sed -i -e 's/__APP_NAME__/${PROJECT_NAME}/g' Jenkinsfile
+              sed -i -e 's/__PROJECT_KEY__/${PROJECT_KEY}/g' Jenkinsfile
               git add .
               git commit -m \"Initial Commit\"
               git remote add origin http://${env.usernameVariable}:${env.passwordVariable}@bitbucket.liatr.io/scm/${PROJECT_KEY}/pipeline-demo-application.git
