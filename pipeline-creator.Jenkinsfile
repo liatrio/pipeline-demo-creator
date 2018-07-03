@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-import groovy.json.JsonSlurper
+import groovy.json.JsonSlurperClassic
 import groovy.json.JsonOutput
 pipeline {
   agent any
@@ -20,7 +20,7 @@ pipeline {
             description: PROJECT_NAME + "-Built by automation"
           ]
           def bitbucketProjectResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(bitbucketProjectPayload), url: "http://bitbucket.liatr.io/rest/api/1.0/projects/"
-          def parsedResponse = new JsonSlurper().parseText(bitbucketProjectResponse.content)
+          def parsedResponse = new JsonSlurperClassic().parseText(bitbucketProjectResponse.content)
           //TODO: slack send the link with success
           println parsedResponse.links.self[0].href
         }

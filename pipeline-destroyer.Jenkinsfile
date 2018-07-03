@@ -1,4 +1,6 @@
 #!/usr/bin/env groovy
+import groovy.json.JsonSlurperClassic
+import groovy.json.JsonOutput
 pipeline {
   agent any
   parameters {
@@ -26,7 +28,23 @@ pipeline {
         }
       }
     }
-    // Deleting slack channel with the bot auth scope wasn't working
+    stage('Delete Slack Channel') {
+      steps {
+        script {
+          withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]) {
+            def channelData = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "https://liatrio-demo.slack.com/api/channels.list"
+            def channelJson = new JsonSlurperClassic().parseText(channelData.content)
+            for ( prop in channelJson.channels ) {
+              if ( prop.name == PROJECT_NAME ) {
+                println "Deleting ChannelID: ${prop.id}"
+                def deleteSlackChannel = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "https://liatrio-demo.slack.com/api/channels.delete?channel=${prop.id}"
+                break
+              }
+            }
+          }
+        }
+      }
+    }
     stage('Delete Confluence space') {
       agent any
       steps {
