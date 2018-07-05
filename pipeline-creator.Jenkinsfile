@@ -128,7 +128,7 @@ pipeline {
         withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'TF_VAR_key_file', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
 //          slackSend channel: env.SLACK_ROOM, message: "Provisioning dev environment"
 //          sh "export export TF_WORKSPACE=${env.PROJECT_NAME} && export TF_VAR_app_name=${env.PROJECT_NAME}"
-          sh "terraform init -input=false -no-color -backend-config='key=liatristorage/${TF_WORKSPACE}/${TF_VAR_app_name}-terraform.tfstate'"
+          sh "terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${TF_WORKSPACE}/${TF_VAR_app_name}-terraform.tfstate'"
           sh "terraform workspace new ${TF_WORKSPACE} -no-color"
           sh "terraform plan -out=plan_${TF_WORKSPACE} -input=false -no-color"
           sh "terraform apply -input=false plan_${TF_WORKSPACE} -no-color"
