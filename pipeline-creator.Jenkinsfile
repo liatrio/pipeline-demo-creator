@@ -12,17 +12,25 @@ pipeline {
         script {
           PROJECT_NAME = params.pipeline_name.replaceAll("[^A-Za-z0-9\\- ]", "").replace(' ', '-').toLowerCase()
           PROJECT_KEY = PROJECT_NAME.substring(0,4).toUpperCase()
+          SLACK_CHANNEL = "#pipeline-notify"
+          SLACK_URL = "https://liatrio.slack.com/services/hooks/jenkins-ci/"
         }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Pipeline-Creator started for the *${PROJECT_NAME}* app at ${env.BUILD_URL}", teamDomain: 'liatrio', failOnError: true
         script {
           def bitbucketProjectPayload = [
             key: PROJECT_KEY,
             name: PROJECT_NAME,
             description: PROJECT_NAME + "-Built by automation"
           ]
-          def bitbucketProjectResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(bitbucketProjectPayload), url: "http://bitbucket.liatr.io/rest/api/1.0/projects/"
+          def bitbucketProjectResponse = httpRequest validResponseCodes: '409,201', authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(bitbucketProjectPayload), url: "http://bitbucket.liatr.io/rest/api/1.0/projects/"
+          if (bitbucketProjectResponse.getStatus() == 409) {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "B80000", message: ":x: Pipeline for *${PROJECT_NAME}* already exists. Aborting. :x:", teamDomain: 'liatrio', failOnError: true
+            currentBuild.result = 'ABORTED'
+            error('Stopping early. Pipeline exists.')
+          }
           def parsedResponse = new JsonSlurperClassic().parseText(bitbucketProjectResponse.content)
-          //TODO: slack send the link with success
-          println parsedResponse.links.self[0].href
+          BITBUCKET_PROJECT_LINK = parsedResponse.links.self[0].href
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Bitbucket project for app ${PROJECT_NAME} created at ${BITBUCKET_PROJECT_LINK}", teamDomain: 'liatrio', failOnError: true
         }
         script {
           def demoAppRepoPayload = [
@@ -31,8 +39,7 @@ pipeline {
             forkable: true
           ]
           def appCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(demoAppRepoPayload), url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos"
-          //def parsedResponse = new JsonSlurper().parseText(appCreationResponse.content)
-          //TODO: slack send the link with success
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Demo App Repo for ${PROJECT_NAME} created in Bitbucket at ${BITBUCKET_PROJECT_LINK}/repos/pipeline-demo-application/browse", teamDomain: 'liatrio', failOnError: true
         }
         script {
           def dashboardRepoPayload = [
@@ -41,8 +48,7 @@ pipeline {
             forkable: true
           ]
           def dashboardCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(dashboardRepoPayload), url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos"
-          //def parsedResponse = new JsonSlurper().parseText(dashboardCreationResponse.content)
-          //TODO: slack send the link with success
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dashboard Repo for ${PROJECT_NAME} created in Bitbucket at ${BITBUCKET_PROJECT_LINK}/repos/pipeline-home/browse", teamDomain: 'liatrio', failOnError: true
         }
       }
     }
@@ -75,6 +81,7 @@ pipeline {
               git push -u origin master
               """
         }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Demo App and Dashboard code replicated for ${PROJECT_NAME}", teamDomain: 'liatrio', failOnError: true
       }
     }
     stage('Create Jira Project') {
@@ -88,18 +95,7 @@ pipeline {
             description: PROJECT_NAME + " - Built by automation"
           ]
           def jiraProjectCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(jiraProjectPayload), url: "http://jira.liatr.io/rest/api/2/project"
-          //TODO: slack send the link with success
-        }
-      }
-    }
-    stage('Create Slack Channel') {
-      steps {
-        script {
-          withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]) {
-          def slackPayload = [name: PIPELINE_NAME]
-          def slackChannelCreationResponse = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(slackPayload), url: "https://liatrio-demo.slack.com/api/channels.create"
-          //TODO: slack send the link with success
-          }
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jira project for app ${PROJECT_NAME} created at http://jira.liatr.io/projects/${PROJECT_KEY}", teamDomain: 'liatrio', failOnError: true
         }
       }
     }
@@ -112,7 +108,21 @@ pipeline {
             name: PIPELINE_NAME
           ]
           def confluenceSpaceCreationResponse = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(confluenceSpacePayload), url: "http://confluence.liatr.io/rest/api/space/"
-          //TODO: slack send the link with success
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Confluence space for app ${PROJECT_NAME} created at http://confluence.liatr.io/display/${PROJECT_KEY}", teamDomain: 'liatrio', failOnError: true
+        }
+      }
+    }
+    stage('Create Slack Channel') {
+      steps {
+        script {
+          withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]) {
+          def slackPayload = [name: PIPELINE_NAME]
+          def slackChannelCreationResponse = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(slackPayload), url: "https://liatrio-demo.slack.com/api/channels.create"
+          def parsedResponse = new JsonSlurperClassic().parseText(slackChannelCreationResponse.content)
+          def slackChannelLink = "https://liatrio-demo.slack.com/messages/"+parsedResponse.channel.id
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Slack channel for ${PROJECT_NAME} created at ${slackChannelLink}", teamDomain: 'liatrio', failOnError: true
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
+          }
         }
       }
     }
