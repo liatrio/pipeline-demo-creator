@@ -121,17 +121,16 @@ pipeline {
       steps {
         script {
           STAGE = env.STAGE_NAME
-          TF_WORKSPACE = PROJECT_NAME
-          TF_VAR_app_name = PROJECT_NAME
           DEV_IP = "dev.${PROJECT_NAME}.liatr.io"
         }
-        withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'TF_VAR_key_file', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
+        withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
 //          slackSend channel: env.SLACK_ROOM, message: "Provisioning dev environment"
-//          sh "export export TF_WORKSPACE=${env.PROJECT_NAME} && export TF_VAR_app_name=${env.PROJECT_NAME}"
-          sh "terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${TF_WORKSPACE}/${TF_VAR_app_name}-terraform.tfstate'"
-          sh "terraform workspace new ${TF_WORKSPACE} -no-color"
-          sh "terraform plan -out=plan_${TF_WORKSPACE} -input=false -no-color"
-          sh "terraform apply -input=false plan_${TF_WORKSPACE} -no-color"
+          sh """export TF_VAR_app_name=${PROJECT_NAME} && export TF_WORKSPACE=${PROJECT_NAME} && export TF_VAR_key_file=${KEY_FILE}
+          terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${PROJECT_NAME}/${PROJECT_NAME}-terraform.tfstate'
+          terraform workspace new ${PROJECT_NAME} -no-color
+          export TF_VAR_app_name=${PROJECT_NAME} && terraform plan -out=plan_${PROJECT_NAME} -input=false -no-color
+          terraform apply -input=false plan_${PROJECT_NAME} -no-color
+          """
         }
       }
     }
