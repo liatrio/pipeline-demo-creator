@@ -142,6 +142,7 @@ pipeline {
           terraform apply -input=false plan_${PROJECT_NAME} -no-color
           """
         }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Deployment environment for ${PROJECT_NAME} created at http://dev.${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
       }
     }
   }
