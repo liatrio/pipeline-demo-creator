@@ -12,13 +12,16 @@ pipeline {
         script {
           PROJECT_NAME = params.pipeline_name.replaceAll("[^A-Za-z0-9\\- ]", "").replace(' ', '-').toLowerCase()
           PROJECT_KEY = PROJECT_NAME.substring(0,4).toUpperCase()
+          SLACK_CHANNEL = "#pipeline-notify"
+          SLACK_URL = "https://liatrio.slack.com/services/hooks/jenkins-ci/"
         }
-        deleteDir()
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Beginning deletion of the *${PROJECT_NAME}* app pipeline", teamDomain: 'liatrio', failOnError: true
         script {
           def deletePipelineHome = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos/pipeline-home"
           def deleteDemoApp = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos/pipeline-demo-application"
           def deleteProject = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}"
         }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Bitbucket project and repositories deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
       }
     }
     stage('Delete Jira Project') {
@@ -26,6 +29,16 @@ pipeline {
         script {
           def deleteJiraPoject = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://jira.liatr.io/rest/api/2/project/${PROJECT_KEY}"
         }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jira project deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+      }
+    }
+    stage('Delete Confluence space') {
+      agent any
+      steps {
+        script {
+          def deleteConfluenceSpace = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://confluence.liatr.io/rest/api/space/${PROJECT_KEY}"
+        }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Confluence space deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
       }
     }
     stage('Delete Slack Channel') {
@@ -43,14 +56,8 @@ pipeline {
             }
           }
         }
-      }
-    }
-    stage('Delete Confluence space') {
-      agent any
-      steps {
-        script {
-          def deleteConfluenceSpace = httpRequest authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://confluence.liatr.io/rest/api/space/${PROJECT_KEY}"
-        }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Slack channel deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":negative_squared_cross_mark: The *${PROJECT_NAME}* app pipeline has been removed :negative_squared_cross_mark:", teamDomain: 'liatrio', failOnError: true
       }
     }
   }
