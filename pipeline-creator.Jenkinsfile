@@ -134,7 +134,6 @@ pipeline {
           DEV_IP = "dev.${PROJECT_NAME}.liatr.io"
         }
         withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
-//          slackSend channel: env.SLACK_ROOM, message: "Provisioning dev environment"
           sh """export TF_VAR_app_name=${PROJECT_NAME} && export TF_VAR_key_file=${KEY_FILE}
           terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${PROJECT_NAME}/${PROJECT_NAME}-terraform.tfstate'
           terraform workspace select ${PROJECT_NAME} -no-color || terraform workspace new ${PROJECT_NAME} -no-color
