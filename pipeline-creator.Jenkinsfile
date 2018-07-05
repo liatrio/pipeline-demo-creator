@@ -121,17 +121,17 @@ pipeline {
       steps {
         script {
           STAGE = env.STAGE_NAME
-          TF_WORKSPACE = params.pipeline_name.replaceAll("[^A-Za-z0-9\\- ]", "").replace(' ', '-').toLowerCase()
-          TF_VAR_app_name = params.pipeline_name.replaceAll("[^A-Za-z0-9\\- ]", "").replace(' ', '-').toLowerCase()
+          TF_WORKSPACE = PROJECT_NAME
+          TF_VAR_app_name = PROJECT_NAME
           DEV_IP = "dev.${PROJECT_NAME}.liatr.io"
         }
         withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'TF_VAR_key_file', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
 //          slackSend channel: env.SLACK_ROOM, message: "Provisioning dev environment"
 //          sh "export export TF_WORKSPACE=${env.PROJECT_NAME} && export TF_VAR_app_name=${env.PROJECT_NAME}"
-          sh "terraform init -input=false -no-color -backend-config='key=liatristorage/${env.TF_VAR_app_name}/${env.TF_VAR_app_name}-terraform.tfstate'"
-          sh "terraform workspace new ${env.TF_VAR_app_name} -no-color"
-          sh "terraform plan -out=plan_${env.TF_VAR_app_name} -input=false -no-color"
-          sh "terraform apply -input=false plan_${env.TF_VAR_app_name} -no-color"
+          sh "terraform init -input=false -no-color -backend-config='key=liatristorage/${TF_WORKSPACE}/${TF_VAR_app_name}-terraform.tfstate'"
+          sh "terraform workspace new ${TF_WORKSPACE} -no-color"
+          sh "terraform plan -out=plan_${TF_WORKSPACE} -input=false -no-color"
+          sh "terraform apply -input=false plan_${TF_WORKSPACE} -no-color"
         }
       }
     }
