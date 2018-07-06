@@ -121,7 +121,6 @@ pipeline {
           def parsedResponse = new JsonSlurperClassic().parseText(slackChannelCreationResponse.content)
           def slackChannelLink = "https://liatrio-demo.slack.com/messages/"+parsedResponse.channel.id
           slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Slack channel for ${PROJECT_NAME} created at ${slackChannelLink}", teamDomain: 'liatrio', failOnError: true
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
           }
         }
       }
@@ -133,6 +132,7 @@ pipeline {
           STAGE = env.STAGE_NAME
           DEV_IP = "dev.${PROJECT_NAME}.liatr.io"
         }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Starting creation of the Dev environment for the *${PROJECT_NAME}* pipeline. This process may take 3-4 min.", teamDomain: 'liatrio', failOnError: true
         withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
           sh """export TF_VAR_app_name=${PROJECT_NAME} && export TF_VAR_key_file=${KEY_FILE}
           terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${PROJECT_NAME}/${PROJECT_NAME}-terraform.tfstate'
@@ -142,6 +142,7 @@ pipeline {
           """
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Deployment environment for ${PROJECT_NAME} created at http://dev.${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
       }
     }
   }

@@ -9,14 +9,16 @@ This project contains automation that will be used to connect tool infrastructur
   * `pipeline-home` - Pipeline dashboard application
     * To be cloned from [here](https://github.com/liatrio/pipeline-home), replacing parameterized values
 3. Create a demo-specific Jira project with a new project key
-4. Create a demo-specific Slack channel with the project name specified
-5. Create a demo-specific Confluence space with a new project key
+4. Create a demo-specific Confluence space with a new project key
+5. Create a demo-specific Slack channel with the project name specified
+6. Provision the pipeline application Dev environment using Terraform
 
 #### Pipeline Destroyer Stages
 1. Delete the demo Bitbucket repositories `pipeline-demo-app` and `pipeline-home`
 2. Delete the demo Bitbucket Project
 3. Delete the Jira Project
 4. Delete the Confluence space
+5. Delete the Slack channel
 
 
 ## Usage
