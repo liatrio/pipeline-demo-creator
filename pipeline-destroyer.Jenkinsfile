@@ -41,6 +41,18 @@ pipeline {
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Confluence space deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
       }
     }
+    stage('Delete Jenkins Folder') {
+      agent any
+      steps {
+        script {
+            JENKINS_URL = "http://jenkins.liatr.io"
+            def jenkinsCrumb = httpRequest authentication: 'jenkins.liatr.io_creds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "${JENKINS_URL}/crumbIssuer/api/json"
+            def crumbJson = new JsonSlurperClassic().parseText(jenkinsCrumb.content)
+            def deleteJenkinsFolder = httpRequest authentication: 'jenkins.liatr.io_creds', customHeaders: [[name: crumbJson.crumbRequestField, value: crumbJson.crumb]], consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/doDelete"
+        }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jenkins folder deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+      }
+    }
     stage('Delete Slack Channel') {
       steps {
         script {
