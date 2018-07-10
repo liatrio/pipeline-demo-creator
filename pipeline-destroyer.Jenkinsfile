@@ -57,6 +57,19 @@ pipeline {
           }
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Slack channel deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+      }
+    }
+    stage('Delete Dev Environment') {
+      steps {
+        withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
+          sh """export TF_VAR_app_name=${PROJECT_NAME} && export TF_VAR_key_file=${KEY_FILE}
+          terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${PROJECT_NAME}/${PROJECT_NAME}-terraform.tfstate'
+          terraform workspace select ${PROJECT_NAME} -no-color || terraform workspace new ${PROJECT_NAME} -no-color
+          export TF_VAR_app_name=${PROJECT_NAME}
+          terraform destroy -auto-approve -no-color
+          """
+        }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Deployment environment for ${PROJECT_NAME} at http://dev.${PROJECT_NAME}.liatr.io has been destroyed", teamDomain: 'liatrio', failOnError: true
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":negative_squared_cross_mark: The *${PROJECT_NAME}* app pipeline has been removed :negative_squared_cross_mark:", teamDomain: 'liatrio', failOnError: true
       }
     }
