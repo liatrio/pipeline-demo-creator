@@ -46,8 +46,13 @@ pipeline {
       steps {
         script {
             JENKINS_URL = "http://jenkins.liatr.io"
-            def jenkinsCrumb = httpRequest authentication: 'jenkins.liatr.io_creds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "${JENKINS_URL}/crumbIssuer/api/json"
-            def crumbJson = new JsonSlurperClassic().parseText(jenkinsCrumb.content)
+            def jenkinsCrumb = httpRequest validResponseCodes: '200,404', authentication: 'jenkins.liatr.io_creds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "${JENKINS_URL}/crumbIssuer/api/json"
+            def crumbJson
+            if (jenkinsCrumb.status == 200){
+                crumbJson = new JsonSlurperClassic().parseText(jenkinsCrumb.content)
+            } else {
+                crumbJson = new JsonSlurperClassic().parseText(JsonOutput.toJson([crumbRequestField: "crumb", crumb: "blank"]))
+            }
             def deleteJenkinsFolder = httpRequest authentication: 'jenkins.liatr.io_creds', customHeaders: [[name: crumbJson.crumbRequestField, value: crumbJson.crumb]], consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/doDelete"
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jenkins folder deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
