@@ -112,6 +112,24 @@ pipeline {
         }
       }
     }
+    stage('Create Jenkins Org Folder') {
+      agent any
+      steps {
+        script {
+            JENKINS_URL = "http://jenkins.liatr.io"
+            def jenkinsCrumb = httpRequest validResponseCodes: '200,404', authentication: 'jenkins.liatr.io_creds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "${JENKINS_URL}/crumbIssuer/api/json"
+            def customHeaders
+            if (jenkinsCrumb.status == 200){
+                def crumbJson = new JsonSlurperClassic().parseText(jenkinsCrumb.content)
+                customHeaders = [[name: crumbJson.crumbRequestField, value: crumbJson.crumb]]
+            } else {
+                customHeaders = []
+            }
+            def createJenkinsFolder = httpRequest validResponseCodes: '201', authentication: 'jenkins.liatr.io_creds', customHeaders: customHeaders, consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/demo-pipeline-manager/buildWithParameters?pipeline_name=${PROJECT_NAME}"
+        }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jenkins Organizational Folder created for the ${PROJECT_NAME} app pipeline at ${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/", teamDomain: 'liatrio', failOnError: true
+      }
+    }
     stage('Create Slack Channel') {
       steps {
         script {

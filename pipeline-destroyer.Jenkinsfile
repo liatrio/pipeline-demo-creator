@@ -54,7 +54,7 @@ pipeline {
             } else {
                 customHeaders = []
             }
-            def deleteJenkinsFolder = httpRequest authentication: 'jenkins.liatr.io_creds', customHeaders: customHeaders, consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/doDelete"
+            def deleteJenkinsFolder = httpRequest validResponseCodes: '200,302,404', authentication: 'jenkins.liatr.io_creds', customHeaders: customHeaders, consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/doDelete"
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jenkins folder deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
       }
@@ -79,6 +79,7 @@ pipeline {
     }
     stage('Delete Dev Environment') {
       steps {
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Tearing down the Dev deployment environment at http://dev.${PROJECT_NAME}.liatr.io. This process usually takes 2-3 min.", teamDomain: 'liatrio', failOnError: true
         withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
           sh """export TF_VAR_app_name=${PROJECT_NAME} && export TF_VAR_key_file=${KEY_FILE}
           terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${PROJECT_NAME}/${PROJECT_NAME}-terraform.tfstate'
@@ -87,7 +88,7 @@ pipeline {
           terraform destroy -auto-approve -no-color
           """
         }
-        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Deployment environment for ${PROJECT_NAME} at http://dev.${PROJECT_NAME}.liatr.io has been destroyed", teamDomain: 'liatrio', failOnError: true
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dev deployment environment for ${PROJECT_NAME} has been destroyed", teamDomain: 'liatrio', failOnError: true
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":negative_squared_cross_mark: The *${PROJECT_NAME}* app pipeline has been removed :negative_squared_cross_mark:", teamDomain: 'liatrio', failOnError: true
       }
     }
