@@ -163,5 +163,32 @@ pipeline {
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
       }
     }
+    stage('Create Dashboard Server') {
+        agent {
+            docker {
+                image 'hashicorp/terraform'
+            }
+        }
+        environment {
+            TF_VAR_bucket_name = "${PROJECT_NAME}.liatr.io"
+        }
+        steps {
+            withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Jenkins AWS Creds' ]]) {
+                slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Creating dashboard infrastructure. This can take ~ 1 minute", teamDomain: 'liatrio', failOnError: true
+                git 'https://github.com/liatrio/pipeline-home.git'
+                sh "terraform init -force-copy -reconfigure -input=false -no-color -backend-config='key=liatristorage/${PROJECT_NAME}/dashboard-terraform.tfstate'"
+                sh 'terraform apply -auto-approve -no-color'
+            }
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dashboard for ${PROJECT_NAME} created at http://${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
+        }
+    }
+  }
+  post {
+      success {
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
+      }
+      failure {
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "#ff0000", message: "Pipeline creator failed at stage ${STAGE}", teamDomain: 'liatrio', failOnError: true
+      }
   }
 }
