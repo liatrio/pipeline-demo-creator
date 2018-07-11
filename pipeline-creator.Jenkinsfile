@@ -160,7 +160,6 @@ pipeline {
           """
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Deployment environment for ${PROJECT_NAME} created at http://dev.${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
-        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
       }
     }
     stage('Create Dashboard Server') {

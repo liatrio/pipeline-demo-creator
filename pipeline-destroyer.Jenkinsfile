@@ -89,7 +89,6 @@ pipeline {
           """
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dev deployment environment for ${PROJECT_NAME} has been destroyed", teamDomain: 'liatrio', failOnError: true
-        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":negative_squared_cross_mark: The *${PROJECT_NAME}* app pipeline has been removed :negative_squared_cross_mark:", teamDomain: 'liatrio', failOnError: true
       }
     }
     stage('Destroy Dashboard Server') {
