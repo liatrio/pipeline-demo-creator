@@ -14,6 +14,7 @@ pipeline {
           PROJECT_KEY = PROJECT_NAME.substring(0,4).toUpperCase()
           SLACK_CHANNEL = "#pipeline-notify"
           SLACK_URL = "https://liatrio.slack.com/services/hooks/jenkins-ci/"
+          DEMO_SLACK_CHANNEL = ""
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Pipeline-Creator started for the *${PROJECT_NAME}* app at ${env.BUILD_URL}", teamDomain: 'liatrio', failOnError: true
         script {
@@ -52,6 +53,20 @@ pipeline {
         }
       }
     }
+    stage('Create Slack Channel') {
+      steps {
+        script {
+          withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]) {
+          def slackPayload = [name: PIPELINE_NAME]
+          def slackChannelCreationResponse = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(slackPayload), url: "https://liatrio-demo.slack.com/api/channels.create"
+          def parsedResponse = new JsonSlurperClassic().parseText(slackChannelCreationResponse.content)
+          DEMO_SLACK_CHANNEL = parsedResponse.channel.id
+          def slackChannelLink = "https://liatrio-demo.slack.com/messages/${DEMO_SLACK_CHANNEL}"
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Slack channel for ${PROJECT_NAME} created at ${slackChannelLink}", teamDomain: 'liatrio', failOnError: true
+          }
+        }
+      }
+    }
     stage('Clone Demo Application and Dashboard') {
       steps {
         deleteDir()
@@ -75,6 +90,7 @@ pipeline {
               sed -i -e 's/__PROJECT_NAME__/${PROJECT_NAME}/g' src/template/site.js
               sed -i -e 's/__PROJECT_KEY__/${PROJECT_KEY}/g' src/template/site.js
               sed -i -e 's/__APP_NAME__/${PROJECT_NAME}/g' src/template/site.js
+              sed -i -e 's/__CHAT_ROOM__/${DEMO_SLACK_CHANNEL}/g' src/template/site.js
               git add .
               git commit -m \"Initial Commit\"
               git remote add origin http://${env.usernameVariable}:${env.passwordVariable}@bitbucket.liatr.io/scm/${PROJECT_KEY}/pipeline-home.git
@@ -128,19 +144,6 @@ pipeline {
             def createJenkinsFolder = httpRequest validResponseCodes: '201', authentication: 'jenkins.liatr.io_creds', customHeaders: customHeaders, consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/demo-pipeline-manager/buildWithParameters?pipeline_name=${PROJECT_NAME}"
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jenkins Organizational Folder created for the ${PROJECT_NAME} app pipeline at ${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/", teamDomain: 'liatrio', failOnError: true
-      }
-    }
-    stage('Create Slack Channel') {
-      steps {
-        script {
-          withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]) {
-          def slackPayload = [name: PIPELINE_NAME]
-          def slackChannelCreationResponse = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], consoleLogResponseBody: true, acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: JsonOutput.toJson(slackPayload), url: "https://liatrio-demo.slack.com/api/channels.create"
-          def parsedResponse = new JsonSlurperClassic().parseText(slackChannelCreationResponse.content)
-          def slackChannelLink = "https://liatrio-demo.slack.com/messages/"+parsedResponse.channel.id
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Slack channel for ${PROJECT_NAME} created at ${slackChannelLink}", teamDomain: 'liatrio', failOnError: true
-          }
-        }
       }
     }
     stage("Provisioning Dev Environment") {
