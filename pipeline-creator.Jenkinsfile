@@ -181,13 +181,31 @@ pipeline {
             slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dashboard for ${PROJECT_NAME} created at http://${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
         }
     }
+    stage('Scan for New Repos to Build, Deploy') {
+      agent any
+      steps {
+        script {
+            JENKINS_URL = "http://jenkins.liatr.io"
+            def jenkinsCrumb = httpRequest validResponseCodes: '200,404', authentication: 'jenkins.liatr.io_creds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "${JENKINS_URL}/crumbIssuer/api/json"
+            def customHeaders
+            if (jenkinsCrumb.status == 200){
+                def crumbJson = new JsonSlurperClassic().parseText(jenkinsCrumb.content)
+                customHeaders = [[name: crumbJson.crumbRequestField, value: crumbJson.crumb]]
+            } else {
+                customHeaders = []
+            }
+            def scanJenkinsFolder = httpRequest validResponseCodes: '302', authentication: 'jenkins.liatr.io_creds', customHeaders: customHeaders, consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/build?delay=0"
+        }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jenkins now scanning for new repos to build and deploy at ${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/", teamDomain: 'liatrio', failOnError: true
+      }
+    }
   }
   post {
       success {
           slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
       }
       failure {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "#ff0000", message: "Pipeline creator failed at stage ${STAGE}", teamDomain: 'liatrio', failOnError: true
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "#ff0000", message: "Pipeline creator failed at stage ${STAGE_NAME}", teamDomain: 'liatrio', failOnError: true
       }
   }
 }
