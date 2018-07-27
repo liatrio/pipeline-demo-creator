@@ -164,15 +164,11 @@ pipeline {
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Deployment environment for ${PROJECT_NAME} created at http://dev.${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
       }
-    }
-    stage('Create Dashboard Server') {
-        agent {
-            docker {
-                image 'hashicorp/terraform'
-            }
-        }
-        environment {
-            TF_VAR_bucket_name = "${PROJECT_NAME}.liatr.io"
+   }
+   stage('Create Dashboard Server') {
+     agent any
+     environment {
+       TF_VAR_bucket_name = "${PROJECT_NAME}.liatr.io"
         }
         steps {
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Jenkins AWS Creds' ]]) {

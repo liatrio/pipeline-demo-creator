@@ -92,11 +92,7 @@ pipeline {
       }
     }
     stage('Destroy Dashboard Server') {
-        agent {
-                docker {
-                    image 'hashicorp/terraform'
-                }
-            }
+        agent any
         environment {
             TF_VAR_bucket_name = "${PROJECT_NAME}.liatr.io"
         }
