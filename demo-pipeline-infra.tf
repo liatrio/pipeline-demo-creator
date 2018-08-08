@@ -1,7 +1,6 @@
 terraform {
         backend "s3" {
         bucket = "liatristorage"
-//        key = "liatristorage/${terraform.workspace}/${var.app_name}-terraform.tfstate"
         region = "us-west-2"
     }
 }
