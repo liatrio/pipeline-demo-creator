@@ -100,7 +100,7 @@ pipeline {
             slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Destroying dashboard infrastructure. This can take ~ 1 minute", teamDomain: 'liatrio', failOnError: true
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Jenkins AWS Creds' ]]) {
                 git 'https://github.com/liatrio/pipeline-home.git'
-                sh "terraform init -force-copy -input=false -no-color -backend-config='key=liatristorage/${PROJECT_NAME}/dashboard-terraform.tfstate'"
+                sh "terraform init -reconfigure -input=false -no-color -backend-config='key=liatristorage/${PROJECT_NAME}/dashboard-terraform.tfstate'"
                 sh 'terraform destroy -auto-approve -no-color'
             }
             slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dashboard for ${PROJECT_NAME} destroyed", teamDomain: 'liatrio', failOnError: true
