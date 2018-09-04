@@ -91,11 +91,11 @@ pipeline {
               }
             }
           }
-        }
-        if (channelFound == false) {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Slack channel for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
-        } else {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Slack channel deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+          if (channelFound == false) {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Slack channel for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
+          } else {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Slack channel deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+          }
         }
       }
     }
