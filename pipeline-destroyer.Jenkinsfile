@@ -134,7 +134,7 @@ pipeline {
           slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":negative_squared_cross_mark: The *${PROJECT_NAME}* app pipeline has been removed :negative_squared_cross_mark:", teamDomain: 'liatrio', failOnError: true
       }
       failure {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "danger", message: "Pipeline destroyer failed at stage ${STAGE}", teamDomain: 'liatrio', failOnError: true
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "danger", message: "Pipeline destroyer failed. See details here: ${env.BUILD_URL}", teamDomain: 'liatrio', failOnError: true
       }
   }
 }
