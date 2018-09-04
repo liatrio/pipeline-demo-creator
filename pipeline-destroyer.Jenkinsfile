@@ -17,9 +17,9 @@ pipeline {
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Beginning deletion of the *${PROJECT_NAME}* app pipeline", teamDomain: 'liatrio', failOnError: true
         script {
-          def deletePipelineHome = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos/pipeline-home"
-          def deleteDemoApp = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos/pipeline-demo-application"
-          def deleteProject = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}"
+          def deletePipelineHome = httpRequest validResponseCodes: '202, 204', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos/pipeline-home"
+          def deleteDemoApp = httpRequest validResponseCodes: '202, 204', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos/pipeline-demo-application"
+          def deleteProject = httpRequest validResponseCodes: '204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}"
           if (deleteProject.status == 404) {
             slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Bitbucket project for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
           } else {
@@ -31,7 +31,7 @@ pipeline {
     stage('Delete Jira Project') {
       steps {
         script {
-          def deleteJiraPoject = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://jira.liatr.io/rest/api/2/project/${PROJECT_KEY}"
+          def deleteJiraPoject = httpRequest validResponseCodes: '204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://jira.liatr.io/rest/api/2/project/${PROJECT_KEY}"
           if (deleteJiraPoject.status == 404) {
             slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Jira project for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
           } else {
@@ -44,7 +44,7 @@ pipeline {
       agent any
       steps {
         script {
-          def deleteConfluenceSpace = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://confluence.liatr.io/rest/api/space/${PROJECT_KEY}"
+          def deleteConfluenceSpace = httpRequest validResponseCodes: '204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://confluence.liatr.io/rest/api/space/${PROJECT_KEY}"
           if (deleteConfluenceSpace.status == 404) {
             slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Confluence space for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
           } else {
