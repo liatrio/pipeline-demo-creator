@@ -204,7 +204,7 @@ pipeline {
           slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
       }
       failure {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "#ff0000", message: "Pipeline creator failed at stage ${STAGE_NAME}", teamDomain: 'liatrio', failOnError: true
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "danger", message: "Pipeline creator failed. See details here: ${env.BUILD_URL}", teamDomain: 'liatrio', failOnError: true
       }
   }
 }
