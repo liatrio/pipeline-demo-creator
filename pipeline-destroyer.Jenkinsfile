@@ -20,10 +20,10 @@ pipeline {
           def deletePipelineHome = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos/pipeline-home"
           def deleteDemoApp = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}/repos/pipeline-demo-application"
           def deleteProject = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://bitbucket.liatr.io/rest/api/1.0/projects/${PROJECT_KEY}"
-          if(deleteProject.status == 404){
-              slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Bitbucket project for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
-          }else{
-              slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Bitbucket project and repositories deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+          if (deleteProject.status == 404) {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Bitbucket project for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
+          } else {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Bitbucket project and repositories deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
           }
         }
       }
@@ -32,11 +32,11 @@ pipeline {
       steps {
         script {
           def deleteJiraPoject = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://jira.liatr.io/rest/api/2/project/${PROJECT_KEY}"
-            if(deleteJiraPoject.status == 404){
-                slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Jira project for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
-            }else{
-                slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Jira project deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
-            }
+          if (deleteJiraPoject.status == 404) {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Jira project for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
+          } else {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Jira project deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+          }
         }
       }
     }
@@ -45,11 +45,11 @@ pipeline {
       steps {
         script {
           def deleteConfluenceSpace = httpRequest validResponseCodes: '200, 204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://confluence.liatr.io/rest/api/space/${PROJECT_KEY}"
-            if(deleteConfluenceSpace.status == 404){
-                slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Confluence space for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
-            }else{
-                slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Confluence space deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
-            }
+          if (deleteConfluenceSpace.status == 404) {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Confluence space for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
+          } else {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Confluence space deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+          }
         }
       }
     }
@@ -57,40 +57,46 @@ pipeline {
       agent any
       steps {
         script {
-            JENKINS_URL = "http://jenkins.liatr.io"
-            def jenkinsCrumb = httpRequest validResponseCodes: '200,404', authentication: 'jenkins.liatr.io_creds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "${JENKINS_URL}/crumbIssuer/api/json"
-            def customHeaders
-            if (jenkinsCrumb.status == 200){
-                def crumbJson = new JsonSlurperClassic().parseText(jenkinsCrumb.content)
-                customHeaders = [[name: crumbJson.crumbRequestField, value: crumbJson.crumb]]
-            } else {
-                customHeaders = []
-            }
-            def deleteJenkinsFolder = httpRequest validResponseCodes: '200,302,404', authentication: 'jenkins.liatr.io_creds', customHeaders: customHeaders, consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/doDelete"
-            if(deleteJenkinsFolder.status == 404){
-                slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Jenkins folder for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
-            }else{
-                slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Jenkins folder deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
-            }
+          JENKINS_URL = "http://jenkins.liatr.io"
+          def jenkinsCrumb = httpRequest validResponseCodes: '200,404', authentication: 'jenkins.liatr.io_creds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "${JENKINS_URL}/crumbIssuer/api/json"
+          def customHeaders
+          if (jenkinsCrumb.status == 200) {
+            def crumbJson = new JsonSlurperClassic().parseText(jenkinsCrumb.content)
+            customHeaders = [[name: crumbJson.crumbRequestField, value: crumbJson.crumb]]
+          } else {
+            customHeaders = []
+          }
+          def deleteJenkinsFolder = httpRequest validResponseCodes: '200,302,404', authentication: 'jenkins.liatr.io_creds', customHeaders: customHeaders, consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/doDelete"
+          if (deleteJenkinsFolder.status == 404) {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Jenkins folder for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
+          } else {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Jenkins folder deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+          }
         }
       }
     }
     stage('Delete Slack Channel') {
       steps {
         script {
+          def channelFound = false
           withCredentials([string(credentialsId: 'liatrio-demo-slack', variable: 'token')]) {
             def channelData = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON', httpMode: 'GET', url: "https://liatrio-demo.slack.com/api/channels.list"
             def channelJson = new JsonSlurperClassic().parseText(channelData.content)
             for ( prop in channelJson.channels ) {
               if ( prop.name == PROJECT_NAME ) {
                 println "Deleting ChannelID: ${prop.id}"
-                def deleteSlackChannel = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer '+"${env.token}"]], consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "https://liatrio-demo.slack.com/api/channels.delete?channel=${prop.id}"
+                def deleteSlackChannel = httpRequest customHeaders: [[name: 'Authorization', value: 'Bearer ' + "${env.token}"]], consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'POST', url: "https://liatrio-demo.slack.com/api/channels.delete?channel=${prop.id}"
+                channelFound = true
                 break
               }
             }
           }
         }
-        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Slack channel deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+        if (channelFound == false) {
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Slack channel for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
+        } else {
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Slack channel deleted for the ${PROJECT_NAME} app pipeline", teamDomain: 'liatrio', failOnError: true
+        }
       }
     }
     stage('Delete Dev Environment') {
