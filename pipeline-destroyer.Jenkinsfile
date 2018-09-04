@@ -44,7 +44,7 @@ pipeline {
       agent any
       steps {
         script {
-          def deleteConfluenceSpace = httpRequest validResponseCodes: '204, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://confluence.liatr.io/rest/api/space/${PROJECT_KEY}"
+          def deleteConfluenceSpace = httpRequest validResponseCodes: '202, 404', authentication: 'BitbucketCreds', consoleLogResponseBody: true, contentType: 'APPLICATION_JSON', httpMode: 'DELETE', url: "http://confluence.liatr.io/rest/api/space/${PROJECT_KEY}"
           if (deleteConfluenceSpace.status == 404) {
             slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "warning", message: "Confluence space for the ${PROJECT_NAME} app pipeline not found", teamDomain: 'liatrio', failOnError: true
           } else {
