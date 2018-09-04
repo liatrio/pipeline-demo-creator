@@ -110,7 +110,7 @@ pipeline {
           terraform destroy -auto-approve -no-color
           """
         }
-        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dev deployment environment for ${PROJECT_NAME} has been destroyed", teamDomain: 'liatrio', failOnError: true
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Dev deployment environment for ${PROJECT_NAME} has been destroyed", teamDomain: 'liatrio', failOnError: true
       }
     }
     stage('Destroy Dashboard Server') {
@@ -125,7 +125,7 @@ pipeline {
                 sh "terraform init -reconfigure -input=false -no-color -backend-config='key=liatristorage/${PROJECT_NAME}/dashboard-terraform.tfstate'"
                 sh 'terraform destroy -auto-approve -no-color'
             }
-            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dashboard for ${PROJECT_NAME} destroyed", teamDomain: 'liatrio', failOnError: true
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Dashboard for ${PROJECT_NAME} destroyed", teamDomain: 'liatrio', failOnError: true
         }
     }
   }
@@ -134,7 +134,7 @@ pipeline {
           slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":negative_squared_cross_mark: The *${PROJECT_NAME}* app pipeline has been removed :negative_squared_cross_mark:", teamDomain: 'liatrio', failOnError: true
       }
       failure {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "#ff0000", message: "Pipeline destroyer failed at stage ${STAGE}", teamDomain: 'liatrio', failOnError: true
+          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "danger", message: "Pipeline destroyer failed at stage ${STAGE}", teamDomain: 'liatrio', failOnError: true
       }
   }
 }
