@@ -99,42 +99,54 @@ pipeline {
         }
       }
     }
-    stage('Delete Dev Environment') {
+    stage('Destroy Dev Environment') {
+      agent any
+      environment {
+        TF_IN_AUTOMATION = "true"
+      }
       steps {
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Tearing down the Dev deployment environment at http://dev.${PROJECT_NAME}.liatr.io. This process usually takes 2-3 min.", teamDomain: 'liatrio', failOnError: true
-        withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
-          sh """export TF_VAR_app_name=${PROJECT_NAME} && export TF_VAR_key_file=${KEY_FILE}
-          terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${PROJECT_NAME}/${PROJECT_NAME}-terraform.tfstate'
-          terraform workspace select ${PROJECT_NAME} -no-color || terraform workspace new ${PROJECT_NAME} -no-color
-          export TF_VAR_app_name=${PROJECT_NAME}
-          terraform destroy -auto-approve -no-color
-          """
+        wrap([$class: 'BuildUser']) {
+          withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS-SVC-Jenkins-non-prod-dev' ]]) {
+            withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
+              sh """ 
+              terraform init -input=false -no-color -force-copy -reconfigure
+              terraform workspace select ${PROJECT_NAME} -no-color || terraform workspace new ${PROJECT_NAME} -no-color
+              terraform destroy -auto-approve -input=false -no-color -var key_file=${KEY_FILE} -var app_name=${PROJECT_NAME} -var 'jenkins_user=${BUILD_USER}'
+              """
+            }
+          }
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Dev deployment environment for ${PROJECT_NAME} has been destroyed", teamDomain: 'liatrio', failOnError: true
       }
     }
     stage('Destroy Dashboard Server') {
-        agent any
-        environment {
-            TF_VAR_bucket_name = "${PROJECT_NAME}.liatr.io"
+      agent any
+      environment {
+        TF_IN_AUTOMATION = "true"
+      }
+      steps {
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Destroying dashboard infrastructure. This can take ~ 1 minute", teamDomain: 'liatrio', failOnError: true
+        wrap([$class: 'BuildUser']) {
+          withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS-SVC-Jenkins-non-prod-dev' ]]) {
+            git 'https://github.com/liatrio/pipeline-home.git'
+            sh """
+            terraform init -input=false -no-color -force-copy -reconfigure
+            terraform workspace select ${PROJECT_NAME} -no-color || terraform workspace new ${PROJECT_NAME} -no-color
+            terraform destroy -auto-approve -input=false -no-color -var bucket_name=${PROJECT_NAME}.liatr.io -var app_name=${PROJECT_NAME} -var 'jenkins_user=${BUILD_USER}'
+            """
+          }
         }
-        steps {
-            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Destroying dashboard infrastructure. This can take ~ 1 minute", teamDomain: 'liatrio', failOnError: true
-            withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Jenkins AWS Creds' ]]) {
-                git 'https://github.com/liatrio/pipeline-home.git'
-                sh "terraform init -reconfigure -input=false -no-color -backend-config='key=liatristorage/${PROJECT_NAME}/dashboard-terraform.tfstate'"
-                sh 'terraform destroy -auto-approve -no-color'
-            }
-            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Dashboard for ${PROJECT_NAME} destroyed", teamDomain: 'liatrio', failOnError: true
-        }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: "Dashboard for ${PROJECT_NAME} destroyed", teamDomain: 'liatrio', failOnError: true
+      }
     }
   }
   post {
-      success {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":negative_squared_cross_mark: The *${PROJECT_NAME}* app pipeline has been removed :negative_squared_cross_mark:", teamDomain: 'liatrio', failOnError: true
-      }
-      failure {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "danger", message: "Pipeline destroyer failed. See details here: ${env.BUILD_URL}", teamDomain: 'liatrio', failOnError: true
-      }
+    success {
+      slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":negative_squared_cross_mark: The *${PROJECT_NAME}* app pipeline has been removed :negative_squared_cross_mark:", teamDomain: 'liatrio', failOnError: true
+    }
+    failure {
+      slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "danger", message: "Pipeline destroyer failed. See details here: ${env.BUILD_URL}", teamDomain: 'liatrio', failOnError: true
+    }
   }
 }

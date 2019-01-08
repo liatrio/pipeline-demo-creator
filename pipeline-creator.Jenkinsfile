@@ -146,39 +146,52 @@ pipeline {
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Jenkins Organizational Folder created for the ${PROJECT_NAME} app pipeline at ${JENKINS_URL}/job/demo-pipelines/job/${PROJECT_NAME}/", teamDomain: 'liatrio', failOnError: true
       }
     }
-    stage("Provisioning Dev Environment") {
+    stage("Provision Dev Environment") {
       agent any
+      environment {
+        TF_IN_AUTOMATION = "true"
+      }
       steps {
         script {
           STAGE = env.STAGE_NAME
           DEV_IP = "dev.${PROJECT_NAME}.liatr.io"
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Starting creation of the Dev environment for the *${PROJECT_NAME}* pipeline. This process may take 3-4 min.", teamDomain: 'liatrio', failOnError: true
-        withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
-          sh """export TF_VAR_app_name=${PROJECT_NAME} && export TF_VAR_key_file=${KEY_FILE}
-          terraform init -input=false -no-color -reconfigure -backend-config='key=liatristorage/${PROJECT_NAME}/${PROJECT_NAME}-terraform.tfstate'
-          terraform workspace select ${PROJECT_NAME} -no-color || terraform workspace new ${PROJECT_NAME} -no-color
-          export TF_VAR_app_name=${PROJECT_NAME} && terraform plan -out=plan_${PROJECT_NAME} -input=false -no-color
-          terraform apply -input=false plan_${PROJECT_NAME} -no-color
-          """
+        wrap([$class: 'BuildUser']) {
+          withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS-SVC-Jenkins-non-prod-dev' ]]) {
+            withCredentials([sshUserPrivateKey(credentialsId: '71d94074-215d-4798-8430-40b98e223d8c', keyFileVariable: 'KEY_FILE', passphraseVariable: '', usernameVariable: 'usernameVariable')]) {
+              sh """ 
+              terraform init -input=false -no-color -force-copy -reconfigure
+              terraform workspace select ${PROJECT_NAME} -no-color || terraform workspace new ${PROJECT_NAME} -no-color
+              terraform plan -out=plan_${PROJECT_NAME}_devenv -input=false -no-color -var key_file=${KEY_FILE} -var app_name=${PROJECT_NAME} -var 'jenkins_user=${BUILD_USER}'
+              terraform apply -input=false plan_${PROJECT_NAME}_devenv -no-color
+              """
+            }
+          }
         }
         slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Deployment environment for ${PROJECT_NAME} created at http://dev.${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
       }
    }
    stage('Create Dashboard Server') {
-     agent any
-     environment {
-       TF_VAR_bucket_name = "${PROJECT_NAME}.liatr.io"
+    agent any
+      environment {
+        TF_IN_AUTOMATION = "true"
+      }
+      steps {
+        wrap([$class: 'BuildUser']) {
+          withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS-SVC-Jenkins-non-prod-dev' ]]) {
+            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Creating dashboard infrastructure. This can take ~ 1 minute", teamDomain: 'liatrio', failOnError: true
+            git 'https://github.com/liatrio/pipeline-home.git'
+            sh """
+            terraform init -input=false -no-color -force-copy -reconfigure
+            terraform workspace select ${PROJECT_NAME} -no-color || terraform workspace new ${PROJECT_NAME} -no-color
+            terraform plan -out=plan_${PROJECT_NAME}_dashboard -input=false -no-color -var bucket_name=${PROJECT_NAME}.liatr.io -var app_name=${PROJECT_NAME} -var 'jenkins_user=${BUILD_USER}'
+            terraform apply -input=false plan_${PROJECT_NAME}_dashboard -no-color
+            """
+          }
         }
-        steps {
-            withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Jenkins AWS Creds' ]]) {
-                slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Creating dashboard infrastructure. This can take ~ 1 minute", teamDomain: 'liatrio', failOnError: true
-                git 'https://github.com/liatrio/pipeline-home.git'
-                sh "terraform init -force-copy -reconfigure -input=false -no-color -backend-config='key=liatristorage/${PROJECT_NAME}/dashboard-terraform.tfstate'"
-                sh 'terraform apply -auto-approve -no-color'
-            }
-            slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dashboard for ${PROJECT_NAME} created at http://${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
-        }
+        slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "A9ACB6", message: "Dashboard for ${PROJECT_NAME} created at http://${PROJECT_NAME}.liatr.io", teamDomain: 'liatrio', failOnError: true
+      }
     }
     stage('Scan for New Repos to Build, Deploy') {
       agent any
@@ -200,11 +213,11 @@ pipeline {
     }
   }
   post {
-      success {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
-      }
-      failure {
-          slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "danger", message: "Pipeline creator failed. See details here: ${env.BUILD_URL}", teamDomain: 'liatrio', failOnError: true
-      }
+    success {
+      slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "good", message: ":white_check_mark: Pipeline for the *${PROJECT_NAME}* app successfully created :white_check_mark:", teamDomain: 'liatrio', failOnError: true
+    }
+    failure {
+      slackSend baseUrl: SLACK_URL, channel: SLACK_CHANNEL, color: "danger", message: "Pipeline creator failed. See details here: ${env.BUILD_URL}", teamDomain: 'liatrio', failOnError: true
+    }
   }
 }
